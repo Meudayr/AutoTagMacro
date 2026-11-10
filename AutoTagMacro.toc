@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: |cff00ccffAutoTagMacro|r
+## X-Curse-Project-ID: 1796347
+## Notes: Dynamically updates the AutoTag macro with active quest targets in your current zone.
+## Author: Meudayr
+## Version: 1.3.0
+## IconTexture: Interface\Icons\Spell_Nature_FaerieFire
+## SavedVariables: AutoTagMacroDB
+## OptionalDeps: QuestieDB, Questie
+## X-Compatible-With: forever
+
+Core.lua
+QuestScanner.lua
+MacroManager.lua
+Options.lua
