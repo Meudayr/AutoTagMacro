@@ -1,35 +1,39 @@
 # AutoTagMacro
 
-World of Warcraft utility addon (compatible with WoW Forever `16001`, Classic `1.12`/`1.15`, Wrath `3.3.5`, and modern clients) that dynamically rewrites a dedicated `AutoTag` macro to target active quest mobs in your current zone and cast `Faerie Fire` (or a configured class tagging spell) without targeting corpses.
+**Note: While AutoTagMacro works completely standalone, functionality is greatly enhanced by having Questie installed. Questie allows the addon to resolve all item-drop quest mobs, check faction hostility, and prioritize targets by exact distance to your player coordinates.**
 
-## Managed Macro Output
+AutoTagMacro automatically scans your quest log and maintains an action bar macro and direct keybind that target incomplete quest mobs in your current zone.
 
-When active quest targets exist in your current zone:
+When you enter an area, change zones, or progress a quest, the addon updates your target list so you don't have to manually write `/tar` macros while leveling.
 
-```text
-#showtooltip
-/cleartarget [dead][noharm]
-/targetexact [noexists] Young Nightsaber
-/targetexact [noexists] Young Thistle Boar
-/stopmacro [dead][noharm]
-/cast [harm,nodead] Faerie Fire
-```
+---
 
-When no quest targets are found for the current zone, `AutoTag` falls back to:
+### Key Features
 
-```text
-#showtooltip
-/cleartarget [dead][noharm]
-/targetenemy [noexists]
-/stopmacro [dead][noharm]
-/cast [harm,nodead] Faerie Fire
-```
+*   **Zone-Aware Quest Targeting**: Identifies hostile mobs needed for active kill and item-collection quests in your current zone.
+*   **Two Ways to Use**:
+    *   **Action Bar Macro**: Creates an `AutoTag` macro that you can drag straight to any action bar slot.
+    *   **Direct Keybind**: An optional keybind set in `/at` that cycles through all zone quest mobs without being limited by WoW's 255-character macro cap.
+*   **Automated Combat Action**: Optionally casts a tagging spell (e.g. *Faerie Fire*, *Moonfire*, *Hunter's Mark*, *Shoot*) or starts auto-attacking immediately upon acquiring a target.
+*   **Non-Toggling Raid Marker**: Places a selected raid icon (Star, Skull, etc.) on living quest targets and keeps it on while spamming.
+*   **Gray-Tag Awareness**: Detects mobs already tagged by other players outside your party, avoiding wasted casts and skipping them out of combat.
+*   **Corpse Re-Target Protection**: Avoids getting stuck repeatedly re-targeting dead corpses at your feet when distant living mobs are nearby.
+*   **Temporary Mob Exclusions**: Right-click any targeted NPC frame (or click its name in `/at`) to temporarily exclude that mob from your target rotation. Exclusions reset automatically when you leave the zone.
 
-## Slash Commands
+---
 
-Use `/autotag` or `/at`:
+### How to Use
 
-* `/at update` or `/at sync`: Force an immediate quest log rescan and macro update (queued if in combat).
-* `/at status`: Display current zone, macro slot, character usage (`X/255`), and tracked quest targets.
-* `/at debug`: Toggle verbose debug logging in chat.
-* `/at spell <SpellName>`: Change the tagging spell (defaults to `Faerie Fire`).
+1. Type `/at` to open the configuration menu.
+2. Click **Pickup Action Bar Macro** and place it on your bars, or click **Bind Direct Key** to assign a dedicated key.
+3. Configure your tagging spell, auto-attack preference, or raid marker as desired.
+
+---
+
+### Slash Commands
+
+*   `/at` or `/autotag` – Open options menu
+*   `/at sync` – Force an immediate quest rescan and macro update
+*   `/at exclude` – Temporarily exclude your current target while in the zone
+*   `/at exclude clear` – Restore all excluded mobs in the current zone
+*   `/at status` – Display active zone targets and character budget in chat
