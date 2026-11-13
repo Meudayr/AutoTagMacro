@@ -30,6 +30,7 @@ local fallbackQuestMobs = {}
 local orderedMobs = {}
 local allAreaMobs = {}
 local seenMobs = {}
+local activeMacroMobs = {}
 local mobBestDistSq = {}
 local incompleteObjectives = {}
 local objectivePool = {}
@@ -867,6 +868,7 @@ function ATM:ScanActiveQuestMobs(zone, subZone)
     wipe(orderedMobs)
     wipe(allAreaMobs)
     wipe(seenMobs)
+    wipe(activeMacroMobs)
     wipe(mobBestDistSq)
 
     zone = zone or ""
@@ -899,6 +901,7 @@ function ATM:ScanActiveQuestMobs(zone, subZone)
         tinsert(allAreaMobs, m)
         if not (self.IsMobTemporarilyExcluded and self:IsMobTemporarilyExcluded(m)) then
             tinsert(orderedMobs, m)
+            activeMacroMobs[strlower(m)] = true
         end
     end
     for i = 1, #subZoneMobs do
@@ -906,6 +909,7 @@ function ATM:ScanActiveQuestMobs(zone, subZone)
         tinsert(allAreaMobs, m)
         if not (self.IsMobTemporarilyExcluded and self:IsMobTemporarilyExcluded(m)) then
             tinsert(orderedMobs, m)
+            activeMacroMobs[strlower(m)] = true
         end
     end
     if (#zoneMobs == 0 and #subZoneMobs == 0) and (not AutoTagMacroDB or AutoTagMacroDB.includeOtherZoneQuests ~= false) then
@@ -914,6 +918,7 @@ function ATM:ScanActiveQuestMobs(zone, subZone)
             tinsert(allAreaMobs, m)
             if not (self.IsMobTemporarilyExcluded and self:IsMobTemporarilyExcluded(m)) then
                 tinsert(orderedMobs, m)
+                activeMacroMobs[strlower(m)] = true
             end
         end
     end
@@ -933,4 +938,14 @@ function ATM:IsTrackedMobName(mobName)
         return false
     end
     return seenMobs[strlower(mobName)] == true
+end
+
+function ATM:IsActiveMacroTarget(mobName)
+    if type(mobName) ~= "string" or mobName == "" then
+        return false
+    end
+    if self.IsMobTemporarilyExcluded and self:IsMobTemporarilyExcluded(mobName) then
+        return false
+    end
+    return activeMacroMobs[strlower(mobName)] == true
 end

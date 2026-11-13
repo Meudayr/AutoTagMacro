@@ -34,6 +34,7 @@ local EditMacro = EditMacro
 local MAX_MACRO_CHARS = 255
 local TOOLTIP_LINE = "#showtooltip"
 local CLEAR_TARGET_LINE = "/cleartarget [dead][noharm]"
+local CLEAR_ALL_TARGET_LINE = "/cleartarget"
 local FALLBACK_TARGET_LINE = "/targetenemy [noexists]"
 local TARGET_EXACT_PREFIX = "/targetexact [noexists] "
 local TARGET_SHORT_PREFIX = "/tar [noexists] "
@@ -186,14 +187,22 @@ function ATM:ArmSecurePage(pageIndex, dropTappedTarget, deadMobNameToSkip)
 
     if dropTappedTarget and pageBody ~= "" then
         -- Replace the conditional /cleartarget [dead][noharm] header with unconditional /cleartarget
-        -- (saves 15 chars, so the page stays strictly <= 255 bytes!) so the gray-tagged mob is dropped
-        -- and the remaining /tar [noexists] lines immediately acquire an untagged mob.
+        -- (saves 15 chars, so the page stays strictly <= 255 bytes!) so the tapped or non-quest mob is dropped
+        -- and the remaining /tar [noexists] lines immediately acquire an active quest mob.
         if pageBody:sub(1, strlen(CLEAR_TARGET_LINE)) == CLEAR_TARGET_LINE then
-            pageBody = "/cleartarget" .. pageBody:sub(strlen(CLEAR_TARGET_LINE) + 1)
-        elseif (strlen(pageBody) + 13) <= MAX_MACRO_CHARS then
-            pageBody = "/cleartarget\n" .. pageBody
-        else
-            pageBody = "/cleartarget"
+            pageBody = CLEAR_ALL_TARGET_LINE .. pageBody:sub(strlen(CLEAR_TARGET_LINE) + 1)
+        elseif pageBody:sub(1, strlen(CLEAR_ALL_TARGET_LINE)) ~= CLEAR_ALL_TARGET_LINE then
+            if (strlen(pageBody) + 13) <= MAX_MACRO_CHARS then
+                pageBody = CLEAR_ALL_TARGET_LINE .. "\n" .. pageBody
+            else
+                -- Drop the last /tar line if needed to make room for /cleartarget\n within 255 bytes.
+                local trimmed = pageBody:gsub("\n/tar[^\n]+(\n)", "%1", 1)
+                if (strlen(trimmed) + 13) <= MAX_MACRO_CHARS then
+                    pageBody = CLEAR_ALL_TARGET_LINE .. "\n" .. trimmed
+                else
+                    pageBody = CLEAR_ALL_TARGET_LINE
+                end
+            end
         end
     end
     self.secureButton:SetAttribute("type1", "macro")
@@ -326,9 +335,22 @@ secureBtn:SetScript("PreClick", function(self, mouseButton, down)
         return
     end
 
-    -- If a living, untagged hostile target is already acquired, ensure the clean page is armed
-    -- so all /tar [noexists] lines are skipped and /cast fires immediately on the current target.
+    -- If a living, untagged hostile target is already acquired, verify it is actually one of our
+    -- active quest targets before keeping it; otherwise drop it first so we never cast on non-quest mobs.
     if IsUnitUntappedHostile("target") then
+        local db = AutoTagMacroDB or ATM.DEFAULT_DB or {}
+        local targetName = UnitName and plain(UnitName("target")) or nil
+        local isQuestTarget = (#secureWrittenMobs == 0)
+            or (ATM.IsActiveMacroTarget and ATM:IsActiveMacroTarget(targetName))
+
+        if db.strictQuestTargetsOnly ~= false and not isQuestTarget then
+            local visiblePage = FindVisibleQuestMobPage()
+            local targetPage = visiblePage or ((ATM.currentSecurePage % totalPages) + 1)
+            lastTriedVisiblePage = visiblePage
+            ATM:ArmSecurePage(targetPage, true)
+            return
+        end
+
         lastTriedVisiblePage = nil
         ATM:ArmSecurePage(ATM.currentSecurePage or 1, false)
         return
@@ -382,7 +404,8 @@ BuildMacroBodies = function(mobList)
 
     local db = AutoTagMacroDB or ATM.DEFAULT_DB or {}
     local showTooltip = db.showTooltip ~= false
-    local clearDead = db.clearDeadTarget ~= false
+    local alwaysClear = db.alwaysClearTarget == true
+    local clearDead = alwaysClear or (db.clearDeadTarget ~= false)
     local includeStop = db.includeStopMacro == true
     local useShortTar = db.useShortTar == true
     local fallbackEnemy = db.fallbackTargetEnemy ~= false
@@ -396,19 +419,20 @@ BuildMacroBodies = function(mobList)
 
     local targetCmdPrefix = useShortTar and TARGET_SHORT_PREFIX or TARGET_EXACT_PREFIX
     local prefixCmdPrefix = useShortTar and TARGET_SHORT_PREFIX_LINE or TARGET_PREFIX_LINE
+    local effectiveClearLine = alwaysClear and CLEAR_ALL_TARGET_LINE or CLEAR_TARGET_LINE
 
     if showTooltip then
         tinsert(bodyLines, TOOLTIP_LINE)
     end
     if clearDead then
-        tinsert(bodyLines, CLEAR_TARGET_LINE)
-        tinsert(secureHeaderLines, CLEAR_TARGET_LINE)
+        tinsert(bodyLines, effectiveClearLine)
+        tinsert(secureHeaderLines, effectiveClearLine)
     end
 
-    -- Non-toggling Raid Marker guard: when clearDead is active and a Raid Marker is set,
-    -- any press while a living hostile target is ALREADY acquired casts/attacks immediately
-    -- and stops BEFORE /tm <N>, preventing Blizzard's /tm from toggling the marker off.
-    if clearDead and raidMarker >= 1 and raidMarker <= 8 then
+    -- Non-toggling Raid Marker guard: when clearDead is active (and not unconditionally clearing)
+    -- and a Raid Marker is set, any press while a living hostile target is ALREADY acquired casts/attacks
+    -- immediately and stops BEFORE /tm <N>, preventing Blizzard's /tm from toggling the marker off.
+    if clearDead and not alwaysClear and raidMarker >= 1 and raidMarker <= 8 then
         if embedMarker then
             if startAttack then
                 tinsert(bodyLines, "/startattack [harm]")

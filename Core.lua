@@ -3,7 +3,7 @@ ATM = ATM or _G["AutoTagMacro"] or {}
 _G["AutoTagMacro"] = ATM
 
 ATM.ADDON_NAME = addonName or "AutoTagMacro"
-ATM.VERSION = "1.3.0"
+ATM.VERSION = "1.3.1"
 ATM.MACRO_NAME = "AutoTag"
 ATM.SECURE_BUTTON_NAME = "AutoTagSecureButton"
 ATM.DEFAULT_SPELL = "Faerie Fire"
@@ -74,6 +74,8 @@ local DEFAULT_DB = {
     startAttack = false,
     showTooltip = true,
     clearDeadTarget = true,
+    strictQuestTargetsOnly = true,
+    alwaysClearTarget = false,
     includeStopMacro = false,
     useShortTar = false,
     fallbackTargetEnemy = true,

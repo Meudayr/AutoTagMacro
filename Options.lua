@@ -58,6 +58,8 @@ SyncOptions = function()
     if widgets.startAttack then widgets.startAttack:SetChecked(db.startAttack == true) end
     if widgets.showTooltip then widgets.showTooltip:SetChecked(db.showTooltip ~= false) end
     if widgets.clearDeadTarget then widgets.clearDeadTarget:SetChecked(db.clearDeadTarget ~= false) end
+    if widgets.strictQuestTargetsOnly then widgets.strictQuestTargetsOnly:SetChecked(db.strictQuestTargetsOnly ~= false) end
+    if widgets.alwaysClearTarget then widgets.alwaysClearTarget:SetChecked(db.alwaysClearTarget == true) end
     if widgets.useShortTar then widgets.useShortTar:SetChecked(db.useShortTar == true) end
     if widgets.fallbackTargetEnemy then widgets.fallbackTargetEnemy:SetChecked(db.fallbackTargetEnemy ~= false) end
     if widgets.enablePrefixCompaction then widgets.enablePrefixCompaction:SetChecked(db.enablePrefixCompaction ~= false) end
@@ -655,11 +657,27 @@ function ATM:RegisterOptions()
         -6
     )
 
+    local cbStrictQuest = MakeCheck(
+        "Drop non-quest targets before casting (Direct Keybind, out of combat)",
+        "If you already have an unrelated mob or excluded target selected, pressing the Direct Keybind drops it first and scans for an active quest mob instead of casting your tagging spell on the non-quest target.",
+        "strictQuestTargetsOnly",
+        cbClearDead,
+        -2
+    )
+
+    local cbAlwaysClear = MakeCheck(
+        "Always clear existing target first (/cleartarget)",
+        "Unconditionally clears any current target at the start of the macro (works in combat and on the 255-char action bar macro too). Note: spamming the same mob may toggle Raid Markers.",
+        "alwaysClearTarget",
+        cbStrictQuest,
+        -2
+    )
+
     local cbShortTar = MakeCheck(
         "Use compact targeting command (/tar instead of /targetexact)",
         "Uses '/tar' instead of '/targetexact' in the 255-character macro. Saves 8 characters per mob, fitting more quest targets into the macro.",
         "useShortTar",
-        cbClearDead,
+        cbAlwaysClear,
         -2
     )
 
